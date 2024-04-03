@@ -9,15 +9,15 @@ def extract_root(chord):
 
 
 transpose_up = {
-    "C": "C#", "C#": "D", "Db": "D", "D": "D#", "D#": "E", "Eb": "E", "E": "F",
+    "C": "C#", "C#": "D", "Db": "D", "D": "D#", "D#": "E", "Eb": "E", "E": "F", "E#": "F#", "Fb": "F",
     "F": "F#", "F#": "G", "Gb": "G", "G": "G#", "G#": "A", "Ab": "A", "A": "A#",
-    "A#": "B", "Bb": "B", "B": "C", "B#": "C#", "Cb": "B"
+    "A#": "B", "Bb": "B", "B": "C", "B#": "C#", "Cb": "C"
 }
 
 transpose_down = {
-    "C": "B", "C#": "C", "Db": "C", "D": "Db", "D#": "D", "Eb": "D", "E": "Eb",
+    "C": "B", "C#": "C", "Db": "C", "D": "Db", "D#": "D", "Eb": "D", "E": "Eb", "E#": "E", "Fb": "Eb",
     "F": "E", "F#": "F", "Gb": "F", "G": "Gb", "G#": "G", "Ab": "G", "A": "Ab",
-    "A#": "A", "Bb": "A", "B": "Bb", "B#": "C", "Cb": "B"
+    "A#": "A", "Bb": "A", "B": "Bb", "B#": "B", "Cb": "Bb"
 }
 
 
