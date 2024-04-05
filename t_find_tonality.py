@@ -1,49 +1,51 @@
 import json
-import random
 from extract_base import extract_chord_base
-from find_tonality import get_top_3_score_pairs, find_tonality
+from find_tonality import TonalityFinder
 from unknown_chords_utils import convert_solfege_chord_to_anglo_saxon
 import traceback
 
 
-def get_random_elements_from_json(file_path):
+# weights = {'C': 2, 'Am': 2,
+#           'Dm': 1, 'E': 1, 'Em': 1, 'F': 1, 'G': 1,
+#           'D': 0.5, 'B7': 0.5, 'A7': 0.5, 'E7': 0.5, 'G7': 0.5}
+
+def get_json(file_path):
     with open(file_path, 'r') as file:
-        json_array = json.load(file)
-
-        if len(json_array) < 100:
-            raise ValueError("The JSON array has fewer than 100 elements.")
-
-        random_elements = random.sample(json_array, 100)
-        return random_elements
+        return json.load(file)
 
 
-file_path = 'exported-chords.json'
+def dataset_to_key_and_chords(songs_array):
+    simplified = []
+
+    for index, one_song in enumerate(songs_array):
+        if index % 10000 == 0:
+            print(index)
+        chords = list(map(lambda x: extract_chord_base(convert_solfege_chord_to_anglo_saxon(x)), one_song[3].split()))
+        if None not in chords:
+            simplified.append({
+                "key": one_song[6],
+                "chords": chords
+            })
+
+    return simplified
+
 
 unknown_chords = ['N.С.', 'N.C.', '¤', 'R', ']A5', 'S', 'H', '%', '2', '`', '`_´', '*', '(', 'h', '\x1aC', 'L', '(',
                   '`', 'N', 'С', '57', 'INTERMEDIO', '022000', '[Am Bbm]', 'С#', 'M', 'Intro', '[D# E]', 'hm', 'ho',
                   '(no3)', 'N.C', '*E', '(A)', '(C)', '\\Am', 'В', 'Вm', 'Pre-coro', '(D', '*Am', '[Bb5/F C5/G]',
                   "'Amaj7", 'M', 'Ñ\x84', ',Dadd9', '9', 'nc', '(G)', 'hammer', 'Аb', '(A)', '?', '(Fsus4)', 'F\u202d#',
-                  'А#', '(Fsus4)', ',Eb', '*Asus2', '[F#7 G7]', 'JESÚS', '12']  # 🙏
-random_100_elements = get_random_elements_from_json(file_path)
+                  'А#', '(Fsus4)', ',Eb', '*Asus2', '[F#7 G7]', 'JESÚS', '12', '557765', '557765', '`Am9']  # 🙏
 
-for song_data in random_100_elements:
-    try:
-        chords_array = song_data[3].split()
-        if any(element in chords_array for element in unknown_chords):
-            continue
+muzland_songs = get_json('muzland.json')
 
-        result = [extract_chord_base(convert_solfege_chord_to_anglo_saxon(chord)) for chord in chords_array]
-        print(f"initial song: {song_data}\n")
-        find_tonality_top = find_tonality(result)
-        for index, pair in enumerate(get_top_3_score_pairs(result)):
-            print(
-                f"{index + 1}. tonal: {find_tonality_top[index]}, score: {pair[1]}, semitones up: {pair[0][1]}, chords: {pair[0][0]}")
-        print('\n\n\n')
-    except Exception as e:
-        traceback.print_exc()
-        print('Unknown chord')
-        print(e)
-        chords_array = song_data[3].split()
-        result = [extract_chord_base(convert_solfege_chord_to_anglo_saxon(chord)) for chord in chords_array]
-        print(result)
-        print(f"initial song: {song_data}\n")
+train = dataset_to_key_and_chords(muzland_songs[:2000])
+test = dataset_to_key_and_chords(muzland_songs[2000:])
+
+whole_dataset = get_json('exported-chords.json')
+print(len(whole_dataset))
+whole_dataset = dataset_to_key_and_chords(whole_dataset)
+print(len(whole_dataset))
+
+tf = TonalityFinder(songs_array=train, test_array=test)
+print(tf.success_rate(test_chords=test, weights=tf.weights))
+revised_weights = tf.find_tonality_multiple_iterations(whole_dataset)

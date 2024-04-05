@@ -6,7 +6,9 @@ def convert_solfege_chord_to_anglo_saxon(chord):
         "FA": "F",
         "SOL": "G",
         "LA": "A",
-        "SI": "B"
+        "SI": "B",
+        "Hm": "Bm",
+        "H": "B"
     }
 
     for latin_note, anglo_saxon_note in solfege_to_anglo_saxon.items():

@@ -1,25 +1,133 @@
-def extract_chord_base(chord):
-    base = chord[0]
-    if len(chord) > 1 and chord[1] in "#b":
-        base += chord[1]
+PITCH = {
+    "Cb": 11, "C": 0, "C#": 1, "Db": 1, "D": 2, "D#": 3, "Eb": 3, "E": 4, "E#": 5, "Fb": 4, "F": 5, "F#": 6, "Gb": 6,
+    "G": 7, "G#": 8, "Ab": 8, "A": 9, "A#": 10, "Bb": 10, "B": 11, "B#": 0, "c": 0, "d": 2,
+    "e": 4, "f": 5, "g": 7, "a": 9, "b": 11
+}
+
+CHUNKS = [
+    "sus4", "sus2", "sus", "XIX", "XIV", "IX", "IV", "XVIII", "XIII", "VIII", "III",
+    "XVII", "XII", "VII", "II", "XVI", "XI", "VI", "I", "XV", "X", "V", "add#11",
+    "add11+", "add+11", "add11", "add9-", "add-9", "add9+", "add+9", "add9", "add2",
+    "add4", "add6", "add13-", "add-13", "addb13", "add13b", "add13", "69", "6/9", "#6",
+    "maj13", "maj7", "maj9", "ma7", "+7", "7M", "maj", "M7", "2", "4", "b9", "-9", "+9",
+    "*", "/#9", "/#11", "#11", "/#5", "#5", "/b13", "b13", "#9", "M9",
+]
+
+DIMINISHED_RELATED_NOTATIONS = ["min7b5", "m7b5", "m7-5", "7-5", "m5-", "m-5", "m75-", "5-", "maj7b5", "M7b5", "7b5",
+                                "-5", "(b5)", "m(b5)", "dim7", "dim", "o", "°", "º"]
+MINOR_RELATED_NOTATIONS = ["m", "M", "min", "mi"]
+AUGMENTED_RELATED_NOTATIONS = ["aug", "+", "+5"]
+
+
+def extract_chunk(chord, chunk):
+    import re
+    regex = re.compile(f"\\(?{re.escape(chunk)}\\)?")
+    if regex.search(chord):
+        return re.sub(regex, "", chord), True
+    return chord, False
+
+
+PitchClass = range(12)
+
+
+class Chord:
+    def __init__(self, root, bass, triad_quality, properties):
+        self.root = root
+        self.bass = bass
+        self.triad_quality = triad_quality
+        self.properties = properties
+
+
+def parse_chord(chord):
+    source_chord = chord
+    properties = []
+    bass = None
+    root = None
+    triad_quality = "major"
+
+    if chord[:2] in PITCH:
+        root = chord[:2]
         chord = chord[2:]
+    elif chord[0] in PITCH:
+        root = chord[0]
+        chord = chord[1:]
     else:
-        chord = chord[1:]
+        # print("    ROOT NOT FOUND")
+        return None
 
-    if 'maj7' in chord:
-        return base
+    for chunk in CHUNKS:
+        chord, extracted = extract_chunk(chord, chunk)
+        if extracted:
+            properties.append(chunk)
 
-    quality = ""
-    seventh = ""
+    if len(chord.split("/")) == 2:
+        chord, bass_letter = chord.split("/")
+        if bass_letter in PITCH:
+            bass = PITCH[bass_letter]
 
-    if chord.startswith('m'):
-        quality = "m"
-        chord = chord[1:]
+    if chord in DIMINISHED_RELATED_NOTATIONS:
+        triad_quality = "dim"
+    elif chord in MINOR_RELATED_NOTATIONS:
+        triad_quality = "minor"
+    elif chord in ["m7+", "m#7"]:
+        triad_quality = "minor"
+        properties.append("maj7")
+    elif chord in AUGMENTED_RELATED_NOTATIONS or chord in ["7+", "7+5"]:
+        triad_quality = "aug"
+        properties.append("7")
+    elif chord == "m6":
+        triad_quality = "minor"
+        properties.append("6")
+    elif chord == "m9":
+        triad_quality = "minor"
+        properties.append("9")
+    elif chord == "m11":
+        triad_quality = "minor"
+        properties.append("11")
+    elif chord == "m13":
+        triad_quality = "minor"
+        properties.append("7")
+        properties.append("13")
+    elif chord in ["m7", "min7"]:
+        triad_quality = "minor"
+        properties.append("m7")
+    elif chord == "7":
+        properties.append("7")
+    elif chord == "9":
+        properties.append("9")
+        properties.append("7")
+    elif chord == "11":
+        properties.append("11")
+        properties.append("7")
+    elif chord == "13":
+        properties.append("13")
+        properties.append("7")
+    elif chord == "5":
+        properties.append("5")
+    elif chord == "6":
+        properties.append("6")
+    elif chord == "3":
+        properties.append("3")
+    elif chord != "":
+        if chord == "m#" and "m#" in source_chord:
+            return parse_chord(source_chord.replace("m#", "#m"))
+        # print("    NOT PARSED", chord, source_chord)
+        return None
 
-    if '7' in chord:
-        seventh = "7"
+    return Chord(root, bass, triad_quality, properties)
 
-    return f"{base}{quality}{seventh}"
+
+def extract_chord_base(chord):
+    parsed = parse_chord(chord)
+    if parsed is None:
+        return None
+    extracted = parsed.root
+    if parsed.triad_quality == 'minor':
+        extracted += 'm'
+    if '7' in parsed.properties:
+        extracted += '7'
+
+    return extracted
 
 
 if __name__ == "__main__":
@@ -51,4 +159,5 @@ if __name__ == "__main__":
         "Em7#5", "A#7#9", "D#add9", "Gbsus2", "Fm7#11", "C7b9#9", "Bm9#11", "Eb7#5", "Aminmaj7", "D#7sus4"
     ]
     for ch in test_chords2:
-        print(f"{ch}: {extract_chord_base(ch)}")
+        parsed = extract_chord_base(ch)
+        print(f"{ch}: {parsed}")
