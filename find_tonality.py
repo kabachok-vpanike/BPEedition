@@ -50,7 +50,8 @@ class TonalityFinder:
     @staticmethod
     def every_chord_has_a_key(songs_array):
         for song in songs_array:
-            if not ("key" in song and "chords" in song):
+            if not ("key" in song and ("chords" in song or "initial_chords" in song)):
+                print(song)
                 return False
         return True
 
